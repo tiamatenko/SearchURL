@@ -7,16 +7,14 @@ ApplicationWindow {
     height: 480
     title: qsTr("Search URL")
 
-    ScrollView {
-        anchors.fill: parent
+    Component.onCompleted: dataModel.start("https://www.musicradar.com", 10, "guitar", 30)
 
-        ListView {
+    ListView {
+        anchors.fill: parent
+        model: dataModel.nodes
+        delegate: ItemDelegate {
+            text: modelData.url
             width: parent.width
-            model: 20
-            delegate: ItemDelegate {
-                text: "Item " + (index + 1)
-                width: parent.width
-            }
         }
     }
 }

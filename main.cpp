@@ -1,5 +1,8 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <QQmlContext>
+
+#include "scannodesmodel.h"
 
 int main(int argc, char *argv[])
 {
@@ -8,6 +11,11 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
 
     QQmlApplicationEngine engine;
+    QQmlContext *context = engine.rootContext();
+
+    ScanNodesModel model;
+    context->setContextProperty(QStringLiteral("dataModel"), &model);
+
     const QUrl url(QStringLiteral("qrc:/main.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
                      &app, [url](QObject *obj, const QUrl &objUrl) {
