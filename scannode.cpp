@@ -13,6 +13,7 @@ ScanNode::ScanNode(const QUrl &url, const QString &text, QObject *parent)
     , m_searchText(text)
     , m_loader(new QNetworkAccessManager(this))
 {
+    m_loader->setRedirectPolicy(QNetworkRequest::NoLessSafeRedirectPolicy);
     connect(m_loader, &QNetworkAccessManager::authenticationRequired, this, [=] (QNetworkReply *, QAuthenticator *) {
         handleError(tr("Authentication Required"));
     });
@@ -20,10 +21,13 @@ ScanNode::ScanNode(const QUrl &url, const QString &text, QObject *parent)
 
 void ScanNode::start(const QUrl &url)
 {
+    setScanStatus(ScanStatus::Loading);
     m_reply = m_loader->get(QNetworkRequest(url.isValid() ? url : m_url));
     m_reply->ignoreSslErrors();
     connect(m_reply, &QNetworkReply::finished, this, &ScanNode::httpFinished);
     connect(m_reply, &QIODevice::readyRead, this, &ScanNode::httpReadyRead);
+    connect(m_reply, QOverload<QNetworkReply::NetworkError>::of(&QNetworkReply::error),
+            this, &ScanNode::handleNetworkError);
 }
 
 void ScanNode::stop()
@@ -44,21 +48,11 @@ void ScanNode::resume()
 
 void ScanNode::httpFinished()
 {
-    if (scanStatus() != Downloading) {
-        m_reply->deleteLater();
-        m_reply = nullptr;
-        return;
-    }
-
-    const QVariant redirectionTarget = m_reply->attribute(QNetworkRequest::RedirectionTargetAttribute);
+    if (scanStatus() == ScanStatus::Loading)
+        setScanStatus(ScanStatus::Error);
 
     m_reply->deleteLater();
     m_reply = nullptr;
-
-    if (!redirectionTarget.isNull()) {
-        const QUrl redirectedUrl = m_url.resolved(redirectionTarget.toUrl());
-        start(redirectedUrl);
-    }
 }
 
 void ScanNode::httpReadyRead()
@@ -83,6 +77,11 @@ void ScanNode::httpReadyRead()
         emit urlsFound(urls.toList());
 }
 
+void ScanNode::handleNetworkError(int error)
+{
+    handleError(tr("Network error is occurred: %1").arg(error));
+}
+
 void ScanNode::setScanStatus(ScanNode::ScanStatus status)
 {
     if (m_scanStatus != status) {
@@ -93,8 +92,10 @@ void ScanNode::setScanStatus(ScanNode::ScanStatus status)
 
 void ScanNode::handleError(const QString &error)
 {
+    m_errorString = error;
+    emit errorStringChanged(error);
+
     setScanStatus(ScanStatus::Error);
 
-    emit errorOccurred(error);
     m_reply->abort();
 }
