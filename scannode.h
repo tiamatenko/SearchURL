@@ -39,7 +39,6 @@ signals:
     void childNodesChanged(const QObjectList &childNodes);
     void htmlDocChanged(const QString &htmlDoc);
     void scanStatusChanged(ScanStatus scanStatus);
-    void downloadProgress(qint64 bytesReceived, qint64 bytesTotal);
     void urlsFound(const QList<QUrl> &urls);
     void errorStringChanged(const QString &errorString);
 

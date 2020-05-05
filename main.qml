@@ -43,7 +43,7 @@ ApplicationWindow {
                         id: name
                         anchors.verticalCenter: parent.verticalCenter
                         leftPadding: 10
-                        text: (index + 1) + ". " + modelData.url + ": " + scanStatus()
+                        text: (index + 1) + ". " + modelData.url + " --> " + scanStatus()
                         color: 'white'
                         function scanStatus() {
                             switch (modelData.scanStatus) {
