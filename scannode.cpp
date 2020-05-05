@@ -19,10 +19,10 @@ ScanNode::ScanNode(const QUrl &url, const QString &text, QObject *parent)
     });
 }
 
-void ScanNode::start(const QUrl &url)
+void ScanNode::start()
 {
     setScanStatus(ScanStatus::Loading);
-    m_reply = m_loader->get(QNetworkRequest(url.isValid() ? url : m_url));
+    m_reply = m_loader->get(QNetworkRequest(m_url));
     m_reply->ignoreSslErrors();
     connect(m_reply, &QNetworkReply::finished, this, &ScanNode::httpFinished);
     connect(m_reply, &QIODevice::readyRead, this, &ScanNode::httpReadyRead);
@@ -49,10 +49,12 @@ void ScanNode::resume()
 void ScanNode::httpFinished()
 {
     if (scanStatus() == ScanStatus::Loading)
-        setScanStatus(ScanStatus::Error);
+        setScanStatus(ScanStatus::NotFound);
 
     m_reply->deleteLater();
     m_reply = nullptr;
+
+    emit scanFinished();
 }
 
 void ScanNode::httpReadyRead()
@@ -65,7 +67,7 @@ void ScanNode::httpReadyRead()
 
     QSet<QUrl> urls;
 
-    static const QRegularExpression re(QStringLiteral("https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)"),
+    static const QRegularExpression re(QStringLiteral("https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_\\+.~#?&//=]*)"),
                                                       QRegularExpression::InvertedGreedinessOption);
     QRegularExpressionMatchIterator it = re.globalMatch(html);
     while (it.hasNext()) {
@@ -79,7 +81,7 @@ void ScanNode::httpReadyRead()
 
 void ScanNode::handleNetworkError(int error)
 {
-    handleError(tr("Network error is occurred: %1").arg(error));
+    handleError(tr("Network error %1").arg(error));
 }
 
 void ScanNode::setScanStatus(ScanNode::ScanStatus status)

@@ -24,7 +24,7 @@ public:
     inline QString errorString() const { return m_errorString; }
 
 public slots:
-    void start(const QUrl &url = QUrl());
+    void start();
     void stop();
     void pause();
     void resume();
@@ -35,6 +35,7 @@ private slots:
     void handleNetworkError(int error);
 
 signals:
+    void scanFinished();
     void childNodesChanged(const QObjectList &childNodes);
     void htmlDocChanged(const QString &htmlDoc);
     void scanStatusChanged(ScanStatus scanStatus);
