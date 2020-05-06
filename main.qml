@@ -12,20 +12,36 @@ ApplicationWindow {
         dataModel.start("https://football.ua", 10, "football", 100)
     }
 
-    ColumnLayout {
+    ListView {
         anchors.fill: parent
-        ListView {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            clip: true
-            model: dataModel.nodes
-            delegate: Item {
-                width: parent.width
-                height: 40
+        clip: true
+        model: dataModel.nodes
+        delegate: ItemDelegate {
+            id: item
+            width: parent.width
+            height: 40
+            text: (index + 1) + ". " + modelData.url + " --> " + scanStatus()
+            function scanStatus() {
+                switch (modelData.scanStatus) {
+                case ScanNode.Loading:
+                    return "Loading..."
+                case ScanNode.Found:
+                    return "OK"
+                case ScanNode.NotFound:
+                    return "Not Found"
+                case ScanNode.Error:
+                    return modelData.errorString
+                }
+            }
+
+            background: Rectangle {
+                color: 'transparent'
+
                 Rectangle {
                     anchors.fill: parent
                     anchors.margins: 2
-                    color: {
+                    color: item.down ? Qt.lighter(statusColor(), 1.3) : statusColor()
+                    function statusColor() {
                         switch (modelData.scanStatus) {
                         case ScanNode.Loading:
                             return 'blue'
@@ -36,55 +52,35 @@ ApplicationWindow {
                         case ScanNode.Error:
                             return 'red'
                         }
-                        return "black"
-                    }
-
-                    Text {
-                        id: name
-                        anchors.verticalCenter: parent.verticalCenter
-                        leftPadding: 10
-                        text: (index + 1) + ". " + modelData.url + " --> " + scanStatus()
-                        color: 'white'
-                        function scanStatus() {
-                            switch (modelData.scanStatus) {
-                            case ScanNode.Loading:
-                                return "Loading..."
-                            case ScanNode.Found:
-                                return "OK"
-                            case ScanNode.NotFound:
-                                return "Not Found"
-                            case ScanNode.Error:
-                                return modelData.errorString
-                            }
-                        }
+                        return 'transparent'
                     }
                 }
             }
         }
-        ProgressBar {
-            id: control
-            Layout.fillWidth: true
-            Layout.preferredHeight: 50
-            to: dataModel.maxDocCount
-            value: dataModel.scannedDocs
-            padding: 2
+    }
 
-            background: Rectangle {
-                color: '#e6e6e6'
-                radius: 3
+    header: ProgressBar {
+        id: control
+        height: 50
+        to: dataModel.maxDocCount
+        value: dataModel.scannedDocs
+        padding: 2
+
+        background: Rectangle {
+            color: '#e6e6e6'
+            radius: 3
+        }
+
+        contentItem: Item {
+            Rectangle {
+                width: control.visualPosition * parent.width
+                height: parent.height
+                radius: 2
+                color: 'darkorange'
             }
-
-            contentItem: Item {
-                Rectangle {
-                    width: control.visualPosition * parent.width
-                    height: parent.height
-                    radius: 2
-                    color: 'darkorange'
-                }
-                Text {
-                    anchors.centerIn: parent
-                    text: control.value + " / " + control.to
-                }
+            Text {
+                anchors.centerIn: parent
+                text: control.value + " / " + control.to
             }
         }
     }
