@@ -3,8 +3,7 @@
 #include <QObject>
 #include <QUrl>
 
-class QNetworkAccessManager;
-class QNetworkReply;
+class QReadWriteLock;
 
 class ScanNode : public QObject
 {
@@ -17,7 +16,8 @@ public:
     Q_ENUM(ScanStatus)
 
     ScanNode() = default;
-    ScanNode(const QUrl &url, const QString &searchText, QObject *parent = nullptr);
+    ScanNode(const QUrl &url, const QString &searchText, QReadWriteLock *pauseLock, QObject *parent = nullptr);
+    ~ScanNode();
 
     inline QUrl url() const { return m_url; }
     inline ScanStatus scanStatus() const { return m_scanStatus; }
@@ -27,32 +27,28 @@ public slots:
     void start();
     void stop();
     void pause();
-    void resume();
 
 private slots:
-    void httpFinished();
-    void httpReadyRead();
-    void handleNetworkError(int error);
+    void scanFinished(bool foundText, const QList<QUrl> &foundUrls);
+    void handleError(const QString &error);
 
 signals:
-    void scanFinished();
-    void childNodesChanged(const QObjectList &childNodes);
-    void htmlDocChanged(const QString &htmlDoc);
-    void scanStatusChanged(ScanStatus scanStatus);
+    void requestStart(const QUrl &url, const QString &searchText);
+    void requestStop();
+    void requestPause();
+    void finished();
     void urlsFound(const QList<QUrl> &urls);
+    void scanStatusChanged(ScanStatus scanStatus);
     void errorStringChanged(const QString &errorString);
 
 private:
     void setScanStatus(ScanStatus status);
-    void handleError(const QString &error);
 
 private:
     const QUrl m_url;
     const QString m_searchText;
     ScanStatus m_scanStatus = None;
     QString m_errorString;
-
-    QNetworkAccessManager *m_loader = nullptr;
-    QNetworkReply *m_reply = nullptr;
+    QThread *m_scanThread;
 };
 

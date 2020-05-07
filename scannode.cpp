@@ -1,87 +1,54 @@
 #include "scannode.h"
 
-#include <QNetworkAccessManager>
-#include <QNetworkReply>
-#include <QAuthenticator>
-#include <QRegularExpression>
-#include <QTextCursor>
-#include <QTextDocument>
+#include "scanworker.h"
 
-ScanNode::ScanNode(const QUrl &url, const QString &text, QObject *parent)
+#include <QThread>
+
+ScanNode::ScanNode(const QUrl &url, const QString &text, QReadWriteLock *pauseLock, QObject *parent)
     : QObject(parent)
     , m_url(url)
     , m_searchText(text)
-    , m_loader(new QNetworkAccessManager(this))
+    , m_scanThread(new QThread(this))
 {
-    m_loader->setRedirectPolicy(QNetworkRequest::NoLessSafeRedirectPolicy);
-    connect(m_loader, &QNetworkAccessManager::authenticationRequired, this, [=] (QNetworkReply *, QAuthenticator *) {
-        handleError(tr("Authentication Required"));
-    });
+    ScanWorker *worker = new ScanWorker(pauseLock);
+    worker->moveToThread(m_scanThread);
+    connect(m_scanThread, &QThread::finished, worker, &QObject::deleteLater);
+    connect(m_scanThread, &QThread::finished, this, &ScanNode::finished);
+    connect(this, &ScanNode::requestStart, worker, &ScanWorker::start);
+    connect(this, &ScanNode::requestStop, worker, &ScanWorker::stop);
+    connect(this, &ScanNode::requestPause, worker, &ScanWorker::pause);
+    connect(worker, &ScanWorker::finished, this, &ScanNode::scanFinished);
+    connect(worker, &ScanWorker::connectionClosed, m_scanThread, &QThread::quit);
+    connect(worker, &ScanWorker::errorOccurred, this, &ScanNode::handleError);
+    m_scanThread->start();
+}
+
+ScanNode::~ScanNode()
+{
+    m_scanThread->quit();
+    m_scanThread->wait();
 }
 
 void ScanNode::start()
 {
     setScanStatus(ScanStatus::Loading);
-    m_reply = m_loader->get(QNetworkRequest(m_url));
-    m_reply->ignoreSslErrors();
-    connect(m_reply, &QNetworkReply::finished, this, &ScanNode::httpFinished);
-    connect(m_reply, &QIODevice::readyRead, this, &ScanNode::httpReadyRead);
-    connect(m_reply, QOverload<QNetworkReply::NetworkError>::of(&QNetworkReply::error),
-            this, &ScanNode::handleNetworkError);
+    emit requestStart(m_url, m_searchText);
 }
 
 void ScanNode::stop()
 {
-    setScanStatus(ScanStatus::NotFound);
-    m_reply->abort();
+    emit requestStop();
 }
 
 void ScanNode::pause()
 {
-    // TODO
+    emit requestPause();
 }
 
-void ScanNode::resume()
+void ScanNode::scanFinished(bool foundText, const QList<QUrl> &foundUrls)
 {
-    // TODO
-}
-
-void ScanNode::httpFinished()
-{
-    if (scanStatus() == ScanStatus::Loading)
-        setScanStatus(ScanStatus::NotFound);
-
-    m_reply->deleteLater();
-    m_reply = nullptr;
-
-    emit scanFinished();
-}
-
-void ScanNode::httpReadyRead()
-{
-    const QString &html = m_reply->readAll();
-    QTextDocument doc;
-    doc.setHtml(html);
-    QTextCursor cursor = doc.find(m_searchText);
-    setScanStatus(cursor.isNull() ? ScanStatus::NotFound : ScanStatus::Found);
-
-    QSet<QUrl> urls;
-
-    static const QRegularExpression re(QStringLiteral("https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{2,256}\\.[a-z]{2,4}\\b([-a-zA-Z0-9@:%_\\+.~#?&//=]*)"),
-                                                      QRegularExpression::InvertedGreedinessOption);
-    QRegularExpressionMatchIterator it = re.globalMatch(html);
-    while (it.hasNext()) {
-        QRegularExpressionMatch match = it.next();
-        const QUrl &url = match.captured();
-        urls << url;
-    }
-    if (!urls.isEmpty())
-        emit urlsFound(urls.toList());
-}
-
-void ScanNode::handleNetworkError(int error)
-{
-    handleError(tr("Network error %1").arg(error));
+    setScanStatus(foundText ? ScanStatus::Found : ScanStatus::NotFound);
+    emit urlsFound(foundUrls);
 }
 
 void ScanNode::setScanStatus(ScanNode::ScanStatus status)
@@ -98,6 +65,4 @@ void ScanNode::handleError(const QString &error)
     emit errorStringChanged(error);
 
     setScanStatus(ScanStatus::Error);
-
-    m_reply->abort();
 }

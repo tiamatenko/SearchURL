@@ -19,7 +19,7 @@ ApplicationWindow {
         delegate: ItemDelegate {
             id: item
             width: parent.width
-            height: 40
+            height: 30
             text: (index + 1) + ". " + modelData.url + " --> " + scanStatus()
             function scanStatus() {
                 switch (modelData.scanStatus) {
@@ -61,7 +61,7 @@ ApplicationWindow {
 
     header: ProgressBar {
         id: control
-        height: 50
+        height: 40
         to: dataModel.maxDocCount
         value: dataModel.scannedDocs
         padding: 2
