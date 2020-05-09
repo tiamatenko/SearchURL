@@ -2,5 +2,7 @@
     <qresource prefix="/">
         <file>main.qml</file>
         <file>qtquickcontrols2.conf</file>
+        <file>IntInput.qml</file>
+        <file>StringInput.qml</file>
     </qresource>
 </RCC>

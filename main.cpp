@@ -2,7 +2,7 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 
-#include "scannodesmodel.h"
+#include "scanengine.h"
 #include "scannode.h"
 
 int main(int argc, char *argv[])
@@ -12,12 +12,13 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
 
     qmlRegisterType<ScanNode>("ScanNode", 1, 0, "ScanNode");
+    qmlRegisterType<ScanEngine>("ScanEngine", 1, 0, "ScanEngine");
 
     QQmlApplicationEngine engine;
     QQmlContext *context = engine.rootContext();
 
-    ScanNodesModel model;
-    context->setContextProperty(QStringLiteral("dataModel"), &model);
+    ScanEngine model;
+    context->setContextProperty(QStringLiteral("scanEngine"), &model);
 
     const QUrl url(QStringLiteral("qrc:/main.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,

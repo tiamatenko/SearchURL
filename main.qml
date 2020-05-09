@@ -2,20 +2,19 @@ import QtQuick 2.12
 import QtQuick.Controls 2.5
 import QtQuick.Layouts 1.12
 import ScanNode 1.0
+import ScanEngine 1.0
 
 ApplicationWindow {
     visible: true
     title: qsTr("Search URL")
 
-    Component.onCompleted: {
-        showMaximized();
-        dataModel.start("https://football.ua", 10, "football", 100)
-    }
+    width: 800
+    height: 600
 
     ListView {
         anchors.fill: parent
         clip: true
-        model: dataModel.nodes
+        model: scanEngine.nodes
         delegate: ItemDelegate {
             id: item
             width: parent.width
@@ -57,13 +56,37 @@ ApplicationWindow {
                 }
             }
         }
+
+        Dialog {
+            id: dialog
+            title: "Resutls"
+            standardButtons: Dialog.Ok
+            visible: false
+            contentItem: Item {
+                ColumnLayout {
+                    anchors.fill: parent
+                    Text {
+                        text: qsTr("Found: ") + scanEngine.foundDocCount
+                        color: 'white'
+                    }
+                    Text {
+                        text: qsTr("Not Found: ") + scanEngine.notFoundDocCount
+                        color: 'white'
+                    }
+                    Text {
+                        text: qsTr("Error: ") + scanEngine.errorDocCount
+                        color: 'white'
+                    }
+                }
+            }
+        }
     }
 
     header: ProgressBar {
         id: control
         height: 40
-        to: dataModel.maxDocCount
-        value: dataModel.scannedDocs
+        to: scanEngine.maxDocCount
+        value: scanEngine.scannedDocs
         padding: 2
 
         background: Rectangle {
@@ -83,5 +106,111 @@ ApplicationWindow {
                 text: control.value + " / " + control.to
             }
         }
+    }
+
+    footer: Rectangle {
+        height: 80
+        color: 'lightgray'
+        RowLayout {
+            anchors.fill: parent
+            anchors.margins: 5
+            GridLayout {
+                columns: 2
+                Text {
+                    text: qsTr("Base URL:")
+                }
+                StringInput {
+                    id: baseUrl
+                    text: "https://football.ua"
+                }
+                Text {
+                    text: qsTr("Search text:")
+                }
+                StringInput {
+                    id: searchText
+                    text: "football"
+                }
+            }
+            GridLayout {
+                columns: 2
+                Text {
+                    text: qsTr("Max documents:")
+                }
+                IntInput {
+                    id: maxDocs
+                    Component.onCompleted: text = scanEngine.maxDocCount
+                }
+                Text {
+                    text: qsTr("Max threads:")
+                }
+                IntInput {
+                    id: maxThreads
+                    Component.onCompleted: text = scanEngine.maxThreadCount
+                }
+            }
+            GridLayout {
+                columns: 2
+                Text {
+                    text: qsTr("Scanned docs:")
+                }
+                Text {
+                    text: scanEngine.scannedDocs
+                }
+                Text {
+                    text: qsTr("Active threads:")
+                }
+                Text {
+                    text: scanEngine.activeThreadCount
+                }
+                Text {
+                    text: qsTr("Deferred threads:")
+                }
+                Text {
+                    text: scanEngine.deferredThreadCount
+                }
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 0
+                Button {
+                    id: startButton
+                    Layout.alignment: Qt.AlignRight
+                    ButtonGroup.group: radioGroup
+                    checkable: true
+                    icon.name: "media-playback-start"
+                    enabled: scanEngine.state !== ScanEngine.Running && baseUrl.text.length > 0 && searchText.text.length > 0
+                    onClicked: {
+                        if (scanEngine.state === ScanEngine.Stopped)
+                            scanEngine.start(baseUrl.text, searchText.text, maxDocs.text, maxThreads.text)
+                        else
+                            scanEngine.resume()
+                    }
+                }
+                Button {
+                    id: stopButton
+                    ButtonGroup.group: radioGroup
+                    checkable: true
+                    icon.name: "media-playback-stop"
+                    enabled: scanEngine.state !== ScanEngine.Stopped
+                    onClicked: scanEngine.stop()
+                }
+                Button {
+                    id: pauseButton
+                    ButtonGroup.group: radioGroup
+                    checkable: true
+                    icon.name: "media-playback-pause"
+                    enabled: scanEngine.state === ScanEngine.Running
+                    onClicked: scanEngine.pause()
+                }
+            }
+        }
+        ButtonGroup { id: radioGroup }
+    }
+
+    Component.onCompleted: scanEngine.stateChanged.connect(showResults)
+
+    function showResults() {
+        if (scanEngine.state === ScanEngine.Stopped)
+            dialog.open()
     }
 }

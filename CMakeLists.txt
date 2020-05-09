@@ -33,8 +33,8 @@ if(ANDROID)
       scannode.h
       scanworker.cpp
       scanworker.h
-      scannodesmodel.cpp
-      scannodesmodel.h
+      scanengine.cpp
+      scanengine.h
       qml.qrc
     )
 else()
@@ -44,8 +44,8 @@ else()
       scannode.h
       scanworker.cpp
       scanworker.h
-      scannodesmodel.cpp
-      scannodesmodel.h
+      scanengine.cpp
+      scanengine.h
       qml.qrc
     )
 endif()

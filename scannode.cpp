@@ -38,6 +38,8 @@ void ScanNode::start()
 void ScanNode::stop()
 {
     emit requestStop();
+    m_scanThread->quit();
+//    m_scanThread->wait();
 }
 
 void ScanNode::pause()
