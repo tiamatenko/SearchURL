@@ -12,7 +12,7 @@ class ScanNode : public QObject
     Q_PROPERTY(ScanStatus scanStatus READ scanStatus NOTIFY scanStatusChanged)
     Q_PROPERTY(QString errorString READ errorString NOTIFY errorStringChanged)
 public:
-    enum ScanStatus { None, Loading, Found, NotFound, Error };
+    enum ScanStatus { Deferred, Loading, Found, NotFound, Error };
     Q_ENUM(ScanStatus)
 
     ScanNode() = default;
@@ -47,7 +47,7 @@ private:
 private:
     const QUrl m_url;
     const QString m_searchText;
-    ScanStatus m_scanStatus = None;
+    ScanStatus m_scanStatus = Deferred;
     QString m_errorString;
     QThread *m_scanThread;
 };

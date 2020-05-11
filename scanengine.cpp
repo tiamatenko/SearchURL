@@ -80,10 +80,8 @@ void ScanEngine::handleUrls(const QList<QUrl> &urls)
         return;
     int oldCount = m_nodes.count();
     for (const auto &url : urls) {
-        if (m_foundUrls.count() >= m_maxDocCount) {
-            setState(State::Stopped);
+        if (m_foundUrls.count() >= m_maxDocCount)
             break;
-        }
         if (!m_foundUrls.contains(url))
             createNode(url);
     }
@@ -132,6 +130,7 @@ void ScanEngine::createNode(const QUrl &url)
                 emit activeThreadCountChanged(--m_activeNodeCount);
         } else {
             m_deferredNodes.dequeue()->start();
+            deferredThreadCountChanged(m_deferredNodes.count());
         }
     });
 
@@ -141,6 +140,7 @@ void ScanEngine::createNode(const QUrl &url)
     }
     else {
         m_deferredNodes.enqueue(node);
+        deferredThreadCountChanged(m_deferredNodes.count());
     }
 }
 
@@ -174,4 +174,6 @@ void ScanEngine::setScannedDocs(int scannedDocs)
          m_scannedDocs = scannedDocs;
          emit scannedDocsChanged(m_scannedDocs);
      }
+     if (m_scannedDocs >= maxDocCount())
+         setState(State::Stopped);
 }

@@ -1,6 +1,7 @@
 import QtQuick 2.12
 import QtQuick.Controls 2.5
 import QtQuick.Layouts 1.12
+import QtQuick.Dialogs 1.3
 import ScanNode 1.0
 import ScanEngine 1.0
 
@@ -22,6 +23,8 @@ ApplicationWindow {
             text: (index + 1) + ". " + modelData.url + " --> " + scanStatus()
             function scanStatus() {
                 switch (modelData.scanStatus) {
+                case ScanNode.Deferred:
+                    return "Deferred"
                 case ScanNode.Loading:
                     return "Loading..."
                 case ScanNode.Found:
@@ -58,25 +61,15 @@ ApplicationWindow {
         }
 
         Dialog {
-            id: dialog
-            title: "Resutls"
-            standardButtons: Dialog.Ok
+            id: resultDialog
+            title: "Scan results:"
             visible: false
             contentItem: Item {
                 ColumnLayout {
                     anchors.fill: parent
-                    Text {
-                        text: qsTr("Found: ") + scanEngine.foundDocCount
-                        color: 'white'
-                    }
-                    Text {
-                        text: qsTr("Not Found: ") + scanEngine.notFoundDocCount
-                        color: 'white'
-                    }
-                    Text {
-                        text: qsTr("Error: ") + scanEngine.errorDocCount
-                        color: 'white'
-                    }
+                    Text { text: qsTr("Found: ") + scanEngine.foundDocCount }
+                    Text { text: qsTr("Not Found: ") + scanEngine.notFoundDocCount }
+                    Text { text: qsTr("Error: ") + scanEngine.errorDocCount }
                 }
             }
         }
@@ -116,9 +109,7 @@ ApplicationWindow {
             anchors.margins: 5
             GridLayout {
                 columns: 2
-                Text {
-                    text: qsTr("Base URL:")
-                }
+                Text { text: qsTr("Base URL:") }
                 StringInput {
                     id: baseUrl
                     text: "https://football.ua"
@@ -133,16 +124,12 @@ ApplicationWindow {
             }
             GridLayout {
                 columns: 2
-                Text {
-                    text: qsTr("Max documents:")
-                }
+                Text { text: qsTr("Max documents:") }
                 IntInput {
                     id: maxDocs
                     Component.onCompleted: text = scanEngine.maxDocCount
                 }
-                Text {
-                    text: qsTr("Max threads:")
-                }
+                Text { text: qsTr("Max threads:") }
                 IntInput {
                     id: maxThreads
                     Component.onCompleted: text = scanEngine.maxThreadCount
@@ -150,24 +137,12 @@ ApplicationWindow {
             }
             GridLayout {
                 columns: 2
-                Text {
-                    text: qsTr("Scanned docs:")
-                }
-                Text {
-                    text: scanEngine.scannedDocs
-                }
-                Text {
-                    text: qsTr("Active threads:")
-                }
-                Text {
-                    text: scanEngine.activeThreadCount
-                }
-                Text {
-                    text: qsTr("Deferred threads:")
-                }
-                Text {
-                    text: scanEngine.deferredThreadCount
-                }
+                Text { text: qsTr("Scanned docs:") }
+                Text { text: scanEngine.scannedDocs }
+                Text { text: qsTr("Active threads:") }
+                Text { text: scanEngine.activeThreadCount }
+                Text { text: qsTr("Deferred threads:") }
+                Text { text: scanEngine.deferredThreadCount }
             }
             RowLayout {
                 Layout.fillWidth: true
@@ -178,12 +153,21 @@ ApplicationWindow {
                     ButtonGroup.group: radioGroup
                     checkable: true
                     icon.name: "media-playback-start"
-                    enabled: scanEngine.state !== ScanEngine.Running && baseUrl.text.length > 0 && searchText.text.length > 0
-                    onClicked: {
-                        if (scanEngine.state === ScanEngine.Stopped)
-                            scanEngine.start(baseUrl.text, searchText.text, maxDocs.text, maxThreads.text)
-                        else
+                    onToggled: {
+                        switch (scanEngine.state) {
+                        case ScanEngine.Stopped:
+                            if (baseUrl.text.trim().length > 0 && searchText.text.trim().length > 0) {
+                                scanEngine.start(baseUrl.text.trim(), searchText.text.trim(), maxDocs.text, maxThreads.text)
+                            }
+                            else {
+                                checked = false
+                                messageDialog.showMessage(qsTr("URL and/or search text cannoot be empty"))
+                            }
+                            break;
+                        case ScanEngine.Paused:
                             scanEngine.resume()
+                            break;
+                        }
                     }
                 }
                 Button {
@@ -191,16 +175,31 @@ ApplicationWindow {
                     ButtonGroup.group: radioGroup
                     checkable: true
                     icon.name: "media-playback-stop"
-                    enabled: scanEngine.state !== ScanEngine.Stopped
-                    onClicked: scanEngine.stop()
+                    onToggled: {
+                        console.log(scanEngine.state)
+                        if (scanEngine.state !== ScanEngine.Stopped) {
+                            scanEngine.stop()
+                        }
+                        else {
+                            checked = false
+                            messageDialog.showMessage(qsTr("Scan is not started yet"))
+                        }
+                    }
                 }
                 Button {
                     id: pauseButton
                     ButtonGroup.group: radioGroup
                     checkable: true
                     icon.name: "media-playback-pause"
-                    enabled: scanEngine.state === ScanEngine.Running
-                    onClicked: scanEngine.pause()
+                    onToggled: {
+                        if (scanEngine.state === ScanEngine.Running) {
+                            scanEngine.pause()
+                        }
+                        else {
+                            checked = false
+                            messageDialog.showMessage(qsTr("Scan is not started yet"))
+                        }
+                    }
                 }
             }
         }
@@ -210,7 +209,18 @@ ApplicationWindow {
     Component.onCompleted: scanEngine.stateChanged.connect(showResults)
 
     function showResults() {
-        if (scanEngine.state === ScanEngine.Stopped)
-            dialog.open()
+        if (scanEngine.state === ScanEngine.Stopped) {
+            radioGroup.checkedButton.checked = false
+            resultDialog.open()
+        }
+    }
+
+    MessageDialog {
+        id: messageDialog
+        title: qsTr("Warning")
+        function showMessage(message) {
+            text = message
+            open()
+        }
     }
 }
