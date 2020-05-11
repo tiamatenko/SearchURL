@@ -176,7 +176,6 @@ ApplicationWindow {
                     checkable: true
                     icon.name: "media-playback-stop"
                     onToggled: {
-                        console.log(scanEngine.state)
                         if (scanEngine.state !== ScanEngine.Stopped) {
                             scanEngine.stop()
                         }

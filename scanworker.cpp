@@ -34,7 +34,6 @@ void ScanWorker::start(const QUrl &url, const QString &searchText)
     connect(m_reply, QOverload<QNetworkReply::NetworkError>::of(&QNetworkReply::error),
             this, [=] (QNetworkReply::NetworkError error) {
         emit errorOccurred(tr("Network error %1").arg(error));
-        m_reply->close();
     });
 }
 
