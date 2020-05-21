@@ -4,8 +4,7 @@ import QtQuick.Layouts 1.12
 import ScanNode 1.0
 
 Rectangle {
-    Layout.preferredWidth: 150
-    Layout.preferredHeight: textEdit.cursorRectangle.height
+    property alias cursorHeight: textEdit.cursorRectangle.height
     property alias text: textEdit.text
     color: 'lightyellow'
     clip: true

@@ -112,6 +112,8 @@ ApplicationWindow {
                 Text { text: qsTr("Base URL:") }
                 StringInput {
                     id: baseUrl
+                    Layout.preferredWidth: 150
+                    Layout.preferredHeight: cursorHeight
                     text: "https://football.ua"
                 }
                 Text {
@@ -119,6 +121,8 @@ ApplicationWindow {
                 }
                 StringInput {
                     id: searchText
+                    Layout.preferredWidth: 150
+                    Layout.preferredHeight: cursorHeight
                     text: "football"
                 }
             }
@@ -127,21 +131,25 @@ ApplicationWindow {
                 Text { text: qsTr("Max documents:") }
                 IntInput {
                     id: maxDocs
-                    Component.onCompleted: text = scanEngine.maxDocCount
+                    Layout.preferredWidth: 50
+                    Layout.preferredHeight: cursorHeight
+                    text: scanEngine.maxDocCount
                 }
                 Text { text: qsTr("Max threads:") }
                 IntInput {
                     id: maxThreads
-                    Component.onCompleted: text = scanEngine.maxThreadCount
+                    Layout.preferredWidth: 50
+                    Layout.preferredHeight: cursorHeight
+                    text: scanEngine.maxThreadCount
                 }
             }
             GridLayout {
                 columns: 2
                 Text { text: qsTr("Scanned docs:") }
                 Text { text: scanEngine.scannedDocs }
-                Text { text: qsTr("Active threads:") }
+                Text { text: qsTr("Active tasks:") }
                 Text { text: scanEngine.activeThreadCount }
-                Text { text: qsTr("Deferred threads:") }
+                Text { text: qsTr("Deferred tasks:") }
                 Text { text: scanEngine.deferredThreadCount }
             }
             RowLayout {

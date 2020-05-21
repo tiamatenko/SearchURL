@@ -3,8 +3,7 @@ import QtQuick.Controls 2.5
 import QtQuick.Layouts 1.12
 
 Rectangle {
-    Layout.preferredWidth: 50
-    Layout.preferredHeight: textInput.cursorRectangle.height
+    property alias cursorHeight: textInput.cursorRectangle.height
     property alias text: textInput.text
     color: 'lightyellow'
     clip: true
